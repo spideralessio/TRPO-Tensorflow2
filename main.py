@@ -29,12 +29,12 @@ if __name__ == '__main__':
 	tf.keras.backend.set_floatx('float64')
 	os.system("rm -rf mylogs/*")
 	# Generate environment
-	env_name = 'MountainCar-v0'
+	env_name = 'CartPole-v0'
 
 	env = gym.make(env_name)
 
 
-	if env_name == 'MountainCar-v0':
+	if env_name == 'MountainCar-v0' or env_name == 'CartPole-v0':
 		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
 		value_model = nn_model(env.observation_space.shape, 1)
 	elif env_name == 'Pong-v0':

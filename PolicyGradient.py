@@ -60,6 +60,7 @@ class REINFORCE:
 			ob = new_ob
 		obs = np.array(obs)
 		rs = np.array(rs)
+		actions = np.array(actions)
 		return obs, rs, actions
 
 	def train_step(self, episode, obs, rs, actions):
@@ -73,27 +74,30 @@ class REINFORCE:
 		Gs = (Gs - Gs.mean())/(Gs.std() + 1e-8)
 		grads_list = []
 		total_value_loss = 0
-		with tf.GradientTape() as tape:
-			with tf.GradientTape() as value_tape:
-				logits = self.model(obs)
-				#log_prob = tf.math.log(tf.gather(action_prob, action, axis=1))
-				neg_log_prob = tf.nn.softmax_cross_entropy_with_logits(logits = logits, labels=tf.one_hot([1], self.env.action_space.n))
-				loss = neg_log_prob * Gs
-				#log_prob = tf.math.log(tf.gather(action_prob, action, axis=1))
-				#loss = tf.reduce_mean(tf.negative(log_prob*G)) # Negative since we want to maximize and apply_gradient does gradient descent, with minus we do gradient ascent
-				if self.value_model:
-					Vs = self.value_model(obs)
-					delta = Gs - Vs # advantage
-					value_loss = tf.losses.mse(V, G)
-					loss *= delta
-				loss = tf.reduce_mean(loss)
-		if self.value_model:
-			value_grads = value_tape.gradient(value_loss, self.value_model.trainable_variables)
-			self.optimizer.apply_gradients(zip(value_grads, self.value_model.trainable_variables))
-		grads = tape.gradient(loss, self.model.trainable_variables)
-		self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
+		def loss_fn():
+			logits = self.model(obs)
+			action_prob = tf.nn.softmax(logits)
+			actions_one_hot = tf.one_hot(actions, self.env.action_space.n, dtype="float64")
 			
-
+			log_prob = tf.math.log(action_prob)
+			loss = tf.reduce_sum(actions_one_hot * log_prob, axis=1)
+			loss = tf.reduce_mean(loss * Gs)
+			return tf.negative(loss) # negative to maximize
+		#loss_fn = lambda: loss
+		#loss_fn = lambda: tf.reduce_mean((self.model(obs) - actions_one_hot)**2)
+		#loss_fn = lambda: tf.nn.softmax_cross_entropy_with_logits(actions_one_hot, self.model(obs))
+		if self.value_model:
+			def value_loss():	
+				global loss_fn
+				Vs = self.value_model(obs)
+				delta = Gs - Vs # advantage
+				value_loss = tf.reduce_mean((Vs - Gs)**2)
+				loss_fn = lambda: delta*loss_fn()
+			
+			self.optimizer.minimize(value_loss_fn, self.value_model.trainable_variables)
+		self.optimizer.minimize(loss_fn, self.model.trainable_variables)
+			
+		loss = loss_fn()
 		writer = self.writer
 		with writer.as_default():
 			# other model code would go here
@@ -102,7 +106,7 @@ class REINFORCE:
 				tf.summary.scalar("value_loss", value_loss, step=episode)
 			tf.summary.scalar("reward", rs.sum(), step=episode)
 		print(f"Ep {episode}: Rw {rs.sum()} - Loss {loss}")
-		return loss
+		return loss_fn
 
 	def train(self, episodes):
 		for episode in range(episodes):
