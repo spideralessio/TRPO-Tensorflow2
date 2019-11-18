@@ -19,7 +19,6 @@ if __name__ == '__main__':
 	env_name = 'CartPole-v0'
 
 	env = gym.make(env_name)
-
 	if env_name == 'MountainCar-v0' or env_name == 'CartPole-v0':
 		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
 		value_model = nn_model(env.observation_space.shape, 1)

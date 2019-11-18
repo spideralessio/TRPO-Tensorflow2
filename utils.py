@@ -1,28 +1,15 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import numpy as np
 
-
-
-def gradient(f, vars):
-	with tf.GradientTape(persistent = True) as t:
-		f = f()
-	grads = t.gradient(f, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)
-	return grads
-
-def hessian_matrix(f, vars):
-	with tf.GradientTape(persistent = True) as t:
-		grads = gradient(f, vars)[0]
-		print(grads.shape)
-		grads =  tf.transpose(grads)
-		print(grads.shape)
-	h = t.gradient(grads, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)[0]
-	return tf.convert_to_tensor(h)
-
-
-def kl_divergence(p, q):
-    return tf.reduce_sum(tf.where(p != 0, p * tf.math.log(p / q), 0))
-
+# Makes gradient of function loss_fn wrt var_list and
+# flattens it to have a 1-D vector 
+def flatgrad(loss_fn, var_list):
+	with tf.GradientTape() as t:
+		loss = loss_fn()
+	grads = t.gradient(loss, var_list)
+	return tf.concat([tf.reshape(g, [-1]) for g in grads], axis=0)
 
 def nn_model(input_shape, output_shape, convolutional=False):
 	model = keras.Sequential()
@@ -37,35 +24,18 @@ def nn_model(input_shape, output_shape, convolutional=False):
 	model.add(layers.Dense(output_shape))
 	return model
 
-def conjugate_grad(A, b, x=None):
-    """
-    Description
-    -----------
-    Solve a linear equation Ax = b with conjugate gradient method.
-    Parameters
-    ----------
-    A: 2d numpy.array of positive semi-definite (symmetric) matrix
-    b: 1d numpy.array
-    x: 1d numpy.array of initial point
-    Returns
-    -------
-    1d numpy.array x such that Ax = b
-    """
-    n = len(b)
-    if not x:
-        x = np.ones(n)
-    r = np.dot(A, x) - b
-    p = - r
-    r_k_norm = np.dot(r, r)
-    for i in xrange(2*n):
-        Ap = np.dot(A, p)
-        alpha = r_k_norm / np.dot(p, Ap)
-        x += alpha * p
-        r += alpha * Ap
-        r_kplus1_norm = np.dot(r, r)
-        beta = r_kplus1_norm / r_k_norm
-        r_k_norm = r_kplus1_norm
-        if r_kplus1_norm < 1e-5:
-            break
-        p = beta * p - r
-    return x
+def assign_vars(model, theta):
+        """
+        Create the process of assigning updated vars
+        """
+        shapes = [v.shape.as_list() for v in model.trainable_variables]	
+        size_theta = np.sum([np.prod(shape) for shape in shapes])
+
+        # self.assign_weights_op = tf.assign(self.flat_weights, self.flat_wieghts_ph)
+        start = 0
+        for i, shape in enumerate(shapes):
+            size = np.prod(shape)
+            param = tf.reshape(theta[start:start + size], shape)
+            model.trainable_variables[i].assign(param)
+            start += size
+        assert start == size_theta, "messy shapes"
