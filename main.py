@@ -4,22 +4,9 @@ import tensorflow as tf
 import numpy as np
 import random
 from PolicyGradient import REINFORCE
+from TRPO import TRPO
 import os
-from tensorflow import keras
-from tensorflow.keras import layers
-
-def nn_model(input_shape, output_shape, convolutional=False):
-	model = keras.Sequential()
-	if convolutional:
-		model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=input_shape))
-		#model.add(layers.MaxPooling2D((2, 2)))
-		#model.add(layers.Conv2D(64, (3, 3), activation='relu'))
-		model.add(layers.Flatten())
-	else:
-		model.add(layers.Dense(10, input_shape=input_shape, activation='relu'))
-	model.add(layers.Dense(20, activation='relu'))
-	model.add(layers.Dense(output_shape))
-	return model
+from utils import nn_model
 
 
 
@@ -32,7 +19,6 @@ if __name__ == '__main__':
 	env_name = 'CartPole-v0'
 
 	env = gym.make(env_name)
-
 
 	if env_name == 'MountainCar-v0' or env_name == 'CartPole-v0':
 		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
@@ -60,7 +46,7 @@ if __name__ == '__main__':
 	
 	policy_model.summary()
 
-	agent = REINFORCE(env, 1e-2, .95, policy_model)
+	agent = TRPO(env, policy_model, value_model)
 	episodes = 10000
 	agent.train(episodes)
 

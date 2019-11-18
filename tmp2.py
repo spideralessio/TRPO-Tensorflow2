@@ -1,16 +1,23 @@
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers, optimizers, losses
-import numpy as np
-N  = 1000                           
-n  = 4                                  
-X = tf.Variable(np.random.randn(n, 1))  
-C = tf.constant(np.random.randn(N, n)) 
-D = tf.constant(np.random.randn(N, 1))
 
-def var():
-	return X
-f_batch_tensorflow = lambda: tf.reduce_sum(tf.square(tf.matmul(C, X) - D))
-print(f_batch_tensorflow)
-print(f_batch_tensorflow())
-optimizer = tf.keras.optimizers.Adam().minimize(f_batch_tensorflow, X)
+x = tf.Variable([[1.],[1.]])
+y = tf.Variable([[2.],[2.]])
+z = tf.Variable([[3.],[3.]])
+f = lambda: (x**3)*(z) + (y)*(z**2)
+
+def gradient(f, vars):
+	with tf.GradientTape() as t:
+		f = f()
+	grads = t.gradient(f, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)
+	return grads
+
+def hessian_matrix(f, vars):
+	with tf.GradientTape(persistent = True) as t:
+		grads = gradient(f, vars)
+		grad = grads[0]
+	print(grad)
+	h = t.gradient(grad, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)[0]
+	return h
+
+
+print(hessian_matrix(f, [x]))
