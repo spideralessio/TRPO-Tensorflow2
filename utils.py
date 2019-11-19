@@ -39,3 +39,19 @@ def assign_vars(model, theta):
             model.trainable_variables[i].assign(param)
             start += size
         assert start == size_theta, "messy shapes"
+
+def flatvars(model):
+	return tf.concat([tf.reshape(v, [-1]) for v in model.trainable_variables], axis=0).numpy()
+
+
+model = nn_model((3,1), 4)
+
+model.summary()
+
+fv = flatvars(model)
+
+assign_vars(model, fv)
+
+fv_new = flatvars(model)
+
+print((fv == fv_new).all())

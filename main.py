@@ -45,7 +45,7 @@ if __name__ == '__main__':
 	
 	policy_model.summary()
 
-	agent = TRPO(env, policy_model, value_model)
+	agent = TRPO(env, policy_model, value_model, render=True)
 	episodes = 10000
 	agent.train(episodes)
 

@@ -45,3 +45,6 @@ for i in range(30):
 
 print("model1", model1(x))
 print("model2", model2(x))
+
+
+print(w)
