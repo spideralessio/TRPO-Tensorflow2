@@ -8,7 +8,7 @@ import numpy as np
 def flatgrad(loss_fn, var_list):
 	with tf.GradientTape() as t:
 		loss = loss_fn()
-	grads = t.gradient(loss, var_list)
+	grads = t.gradient(loss, var_list, unconnected_gradients=tf.UnconnectedGradients.NONE)
 	return tf.concat([tf.reshape(g, [-1]) for g in grads], axis=0)
 
 def nn_model(input_shape, output_shape, convolutional=False):
@@ -41,17 +41,17 @@ def assign_vars(model, theta):
         assert start == size_theta, "messy shapes"
 
 def flatvars(model):
-	return tf.concat([tf.reshape(v, [-1]) for v in model.trainable_variables], axis=0).numpy()
+	return tf.concat([tf.reshape(v, [-1]) for v in model.trainable_variables], axis=0)
 
+if __name__ == '__main__':
+	model = nn_model((3,1), 4)
 
-model = nn_model((3,1), 4)
+	model.summary()
 
-model.summary()
+	fv = flatvars(model).numpy()
 
-fv = flatvars(model)
+	assign_vars(model, fv)
 
-assign_vars(model, fv)
+	fv_new = flatvars(model).numpy()
 
-fv_new = flatvars(model)
-
-print((fv == fv_new).all())
+	print((fv == fv_new).all())
