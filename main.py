@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from PolicyGradient import REINFORCE
-from TRPO import TRPO
+from TRPO2 import TRPO
 import os
 from utils import nn_model
 
@@ -14,12 +14,13 @@ from utils import nn_model
 if __name__ == '__main__':
 	print(tf.__version__)
 	tf.keras.backend.set_floatx('float64')
-	os.system("rm -rf mylogs/*")
 	# Generate environment
-	env_name = 'CartPole-v0'
+	env_name = 'LunarLander-v2'
 
 	env = gym.make(env_name)
-	if env_name == 'MountainCar-v0' or env_name == 'CartPole-v0':
+	if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2']:
+		# if env_name == "MountainCar-v0":
+			# env._max_episode_steps = 600
 		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
 		value_model = nn_model(env.observation_space.shape, 1)
 	elif env_name == 'Pong-v0':
@@ -37,15 +38,15 @@ if __name__ == '__main__':
 	#env = wrappers.Monitor(env, directory=outdir, force=True)
 	
 	# Set Random Seed, probably not needed but useful for reproduction
-	seed = 0
-	env.seed(seed)
-	tf.random.set_seed(seed)
-	np.random.seed(seed)
-	random.seed(seed)
+	# seed = 0
+	# env.seed(seed)
+	# tf.random.set_seed(seed)
+	# np.random.seed(seed)
+	# random.seed(seed)
 	
 	policy_model.summary()
 
-	agent = TRPO(env, policy_model, value_model, render=True)
+	agent = TRPO(env, policy_model, value_model, render=False)
 	episodes = 10000
 	agent.train(episodes)
 

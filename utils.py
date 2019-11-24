@@ -14,31 +14,31 @@ def flatgrad(loss_fn, var_list):
 def nn_model(input_shape, output_shape, convolutional=False):
 	model = keras.Sequential()
 	if convolutional:
-		model.add(layers.Conv2D(16, (3, 3), activation='relu', input_shape=input_shape))
-		#model.add(layers.MaxPooling2D((2, 2)))
-		#model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+		model.add(layers.Lambda(lambda x: tf.cast(tf.image.resize(tf.image.rgb_to_grayscale(x), size=(32,32)), dtype=tf.float64)/256., input_shape=input_shape))
+		model.add(layers.Conv2D(1, (3, 3), activation='relu'))
+		model.add(layers.MaxPooling2D((3, 3)))
 		model.add(layers.Flatten())
-	else:
-		model.add(layers.Dense(10, input_shape=input_shape, activation='relu'))
-	model.add(layers.Dense(20, activation='relu'))
+	# else:
+	model.add(layers.Dense(64, input_shape=input_shape, activation='relu'))
+	model.add(layers.Dense(64, activation='relu'))
 	model.add(layers.Dense(output_shape))
 	return model
 
 def assign_vars(model, theta):
-        """
-        Create the process of assigning updated vars
-        """
-        shapes = [v.shape.as_list() for v in model.trainable_variables]	
-        size_theta = np.sum([np.prod(shape) for shape in shapes])
+		"""
+		Create the process of assigning updated vars
+		"""
+		shapes = [v.shape.as_list() for v in model.trainable_variables]	
+		size_theta = np.sum([np.prod(shape) for shape in shapes])
 
-        # self.assign_weights_op = tf.assign(self.flat_weights, self.flat_wieghts_ph)
-        start = 0
-        for i, shape in enumerate(shapes):
-            size = np.prod(shape)
-            param = tf.reshape(theta[start:start + size], shape)
-            model.trainable_variables[i].assign(param)
-            start += size
-        assert start == size_theta, "messy shapes"
+		# self.assign_weights_op = tf.assign(self.flat_weights, self.flat_wieghts_ph)
+		start = 0
+		for i, shape in enumerate(shapes):
+			size = np.prod(shape)
+			param = tf.reshape(theta[start:start + size], shape)
+			model.trainable_variables[i].assign(param)
+			start += size
+		assert start == size_theta, "messy shapes"
 
 def flatvars(model):
 	return tf.concat([tf.reshape(v, [-1]) for v in model.trainable_variables], axis=0)
