@@ -37,7 +37,7 @@ class TRPO:
 		self.residual_tol = residual_tol
 		#os.system("rm -rf mylogs/trpo")
 		current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-		self.writer = tf.summary.create_file_writer(f"mylogs/TRPO-{current_time}")
+		self.writer = tf.summary.create_file_writer(f"mylogs/TRPO-{self.env.unwrapped.spec.id}-{current_time}")
 		self.model = policy_model
 		self.tmp_model = models.clone_model(self.model)
 		self.value_model = value_model
