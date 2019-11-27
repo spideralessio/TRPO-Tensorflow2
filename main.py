@@ -7,7 +7,7 @@ from PolicyGradient import REINFORCE
 from TRPO2 import TRPO
 import os
 from utils import nn_model
-
+import sys
 
 
 
@@ -15,7 +15,10 @@ if __name__ == '__main__':
 	print(tf.__version__)
 	tf.keras.backend.set_floatx('float64')
 	# Generate environment
-	env_name = 'LunarLander-v2'
+	if len(sys.argv) > 1:
+		env_name == sys.argv[1]
+	else:
+		env_name = 'LunarLander-v2'
 
 	env = gym.make(env_name)
 	if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2']:
