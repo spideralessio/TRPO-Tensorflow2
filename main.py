@@ -16,10 +16,10 @@ if __name__ == '__main__':
 	tf.keras.backend.set_floatx('float64')
 	# Generate environment
 	if len(sys.argv) > 1:
-		env_name == sys.argv[1]
+		env_name = sys.argv[1]
 	else:
 		env_name = 'LunarLander-v2'
-
+	print("Playing in", env_name)
 	env = gym.make(env_name)
 	if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2']:
 		# if env_name == "MountainCar-v0":
