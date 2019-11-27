@@ -28,7 +28,7 @@ class TRPO:
 	"""
 	def __init__(self, env, policy_model, value_model, value_lr=1e-1, gamma=0.99, delta = 0.01, 
 				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.001, epsilon=0.0,
-				backtrack_coeff=0.6, backtrack_iters=15, render=False, batch_size=8192, n_paths=10):
+				backtrack_coeff=0.6, backtrack_iters=15, render=False, batch_size=64, n_paths=10):
 		self.env = env
 		self.gamma = gamma
 		self.cg_iters = cg_iters
@@ -121,7 +121,6 @@ class TRPO:
 			action_prob = tf.reduce_sum(actions_one_hot * action_prob, axis=1)
 			old_logits = self.model(obs)
 			old_action_prob = tf.nn.softmax(old_logits)
-			# old_action_prob = action_probs.copy()
 			old_action_prob = tf.reduce_sum(actions_one_hot * old_action_prob, axis=1).numpy() + 1e-8
 			prob_ratio = action_prob / old_action_prob # pi(a|s) / pi_old(a|s)
 			loss = -tf.reduce_mean(prob_ratio * advantage) - self.ent_coeff * entropy
@@ -212,7 +211,7 @@ class TRPO:
 			policy_gradient = flatgrad(surrogate_loss, self.model.trainable_variables).numpy()
 			step_direction = conjugate_grad(hessian_vector_product, -policy_gradient)
 			shs = .5 * step_direction.dot(hessian_vector_product(step_direction).T)
-			lm = np.sqrt(shs / self.delta)
+			lm = np.sqrt(shs / self.delta) + 1e-8
 			fullstep = step_direction / lm
 			gdotstepdir = -policy_gradient.dot(step_direction)
 
