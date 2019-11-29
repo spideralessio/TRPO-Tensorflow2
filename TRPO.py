@@ -27,7 +27,7 @@ class TRPO:
 	"""
 	def __init__(self, env, policy_model, value_model, value_lr=1e-2, gamma=0.99, delta = 0.01, 
 				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.000, epsilon=0.4,
-				backtrack_coeff=0.6, backtrack_iters=15, render=False, batch_size=8192, n_paths=5):
+				backtrack_coeff=0.6, backtrack_iters=15, render=False, batch_size=8192, n_paths=10):
 		self.env = env
 		self.gamma = gamma
 		self.cg_iters = cg_iters

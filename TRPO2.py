@@ -28,11 +28,12 @@ class TRPO:
 	says(sound=None)
 		Prints the animals name and what sound it makes
 	"""
-	def __init__(self, env_name, policy_model, value_model, value_lr=1e-1, gamma=0.99, delta = 0.01, 
-				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.001, epsilon=0.3,
-				backtrack_coeff=0.6, backtrack_iters=30, render=False, batch_size=4096, n_paths=10):
+	def __init__(self, env_name, policy_model, value_model, value_lr=1e-1, gamma=0.99, delta = 0.04, 
+				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.0, epsilon=0.4,
+				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2):
 		self.env_name = env_name
 		self.N_PATHS = n_paths
+		self.N_THREADS = n_threads
 		self.envs = []
 		for i in range(self.N_PATHS):
 			self.envs.append(gym.make(self.env_name))
@@ -90,10 +91,12 @@ class TRPO:
 				self.render = True
 			else:
 				self.render = False
+			last_action = None
 			while not done:
-				action, action_prob = self(ob)
+				action, action_prob = self(ob, last_action)
 				#self.env.render()
 				new_ob, r, done, info = self.envs[path].step(action)
+				last_action = action
 				if self.render and path == 0:
 					self.envs[path].render()
 				rs.append(r)
@@ -116,13 +119,20 @@ class TRPO:
 			Gs_all[path] = Gs
 			# print(f"{episode}.{path}: {sum(rs)}")
 
-		threads = []
-		for path in range(self.N_PATHS):
-			thread = threading.Thread(target=generate_path, args=(path,))
-			thread.start()
-			threads.append(thread)
-		for path in range(self.N_PATHS):
-			threads[path].join()
+		
+		i = 0
+		while i < self.N_PATHS:
+			j = 0
+			threads = []
+			while j < self.N_THREADS and i < self.N_PATHS:
+				thread = threading.Thread(target=generate_path, args=(i,))
+				thread.start()
+				threads.append(thread)
+				j += 1
+				i += 1
+			for thread in threads:
+				thread.join()
+
 
 		mean_entropy = np.mean(mean_entropy)
 		mean_total_reward = np.mean(mean_total_reward)
@@ -149,6 +159,7 @@ class TRPO:
 			# old_action_prob = (action_probs * actions_one_hot).sum() + 1e-8
 			prob_ratio = action_prob / old_action_prob # pi(a|s) / pi_old(a|s)
 			loss = -tf.reduce_mean(prob_ratio * advantage) - self.ent_coeff * entropy
+			# print(-tf.reduce_mean(prob_ratio * advantage),  self.ent_coeff * entropy)
 			return loss
 
 		def kl_fn(theta=None):
@@ -162,7 +173,7 @@ class TRPO:
 			old_logits = self.model(obs)
 			old_action_prob = tf.nn.softmax(old_logits)
 			# old_action_prob = action_probs
-			return tf.reduce_mean(tf.reduce_sum(old_action_prob * tf.math.log(old_action_prob / (action_prob)), axis=1))
+			return tf.reduce_mean(tf.reduce_sum(old_action_prob * tf.math.log(old_action_prob / action_prob), axis=1))
 
 		def hessian_vector_product(p):
 			def hvp_fn(): 
@@ -196,7 +207,7 @@ class TRPO:
 			return x
 
 		def linesearch(x, fullstep, expected_improve_rate):
-			accept_ratio = .1
+			accept_ratio = 0#.1
 			fval = surrogate_loss(x)
 			for (_n_backtracks, stepfrac) in enumerate(self.backtrack_coeff**np.arange(self.backtrack_iters)):
 				xnew = x + stepfrac * fullstep
@@ -211,10 +222,12 @@ class TRPO:
 					print("Is nan newfval:", np.isnan(newfval))
 					print("Is nan fullstep:", np.isnan(fullstep))
 					print("Is nan expected_improve_rate:", np.isnan(expected_improve_rate))
-				if ratio > accept_ratio and actual_improve >= 0:
+				if ratio >= accept_ratio and actual_improve >= 0:
 					return xnew
 				if _n_backtracks == self.backtrack_iters - 1:
 					print("Linesearch failed.")
+			print(ratio, accept_ratio)
+			print(actual_improve)
 			return x
 
 
@@ -229,6 +242,7 @@ class TRPO:
 
 
 			Vs = self.value_model(obs).numpy().flatten()
+			# advantage = Gs
 			advantage = Gs - Vs
 			advantage = (advantage - advantage.mean())/(advantage.std() + 1e-8)
 			actions_one_hot = tf.one_hot(actions, self.envs[0].action_space.n, dtype="float64")
@@ -266,14 +280,14 @@ class TRPO:
 			value_loss = history.history["loss"][-1]
 
 
-			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl}")
+			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon}")
 
 		writer = self.writer
 		with writer.as_default():
 			tf.summary.scalar("reward", total_reward, step=episode)
 			tf.summary.scalar("value_loss", value_loss, step=episode)
 			tf.summary.scalar("policy_loss", policy_loss, step=episode)
-		self.epsilon -= 1e-3	
+		self.epsilon -= 5e-3	
 
 	def train(self, episodes):
 		for episode in range(episodes):
