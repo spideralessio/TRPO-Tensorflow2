@@ -18,12 +18,12 @@ if __name__ == '__main__':
 	if len(sys.argv) > 1:
 		env_name = sys.argv[1]
 	else:
-		env_name = 'LunarLander-v2'
+		env_name = 'MountainCar-v0'
 	print("Playing in", env_name)
+
 	env = gym.make(env_name)
+
 	if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2']:
-		# if env_name == "MountainCar-v0":
-			# env._max_episode_steps = 600
 		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
 		value_model = nn_model(env.observation_space.shape, 1)
 	elif env_name == 'Pong-v0':
@@ -32,6 +32,7 @@ if __name__ == '__main__':
 	else:
 		raise NotImplementedError(f"Not implemented environment {env_name}")
 
+	env.close()
 	# For visualization
 	# You provide the directory to write to (can be an existing
 	# directory, including one with existing data -- all monitor files
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 	
 	policy_model.summary()
 
-	agent = TRPO(env, policy_model, value_model, render=False)
+	agent = TRPO(env_name, policy_model, value_model, render=False)
 	episodes = 10000
 	agent.train(episodes)
 

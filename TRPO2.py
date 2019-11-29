@@ -6,6 +6,8 @@ from utils import flatgrad, nn_model, assign_vars, flatvars
 import os
 import glob
 from datetime import datetime
+import threading
+import gym
 class TRPO:
 	"""
 	REINFORCE Policy Gradient Agent
@@ -26,10 +28,16 @@ class TRPO:
 	says(sound=None)
 		Prints the animals name and what sound it makes
 	"""
-	def __init__(self, env, policy_model, value_model, value_lr=1e-1, gamma=0.99, delta = 0.01, 
-				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.001, epsilon=0.0,
-				backtrack_coeff=0.6, backtrack_iters=15, render=False, batch_size=64, n_paths=10):
-		self.env = env
+	def __init__(self, env_name, policy_model, value_model, value_lr=1e-1, gamma=0.99, delta = 0.01, 
+				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.001, epsilon=0.3,
+				backtrack_coeff=0.6, backtrack_iters=30, render=False, batch_size=4096, n_paths=10):
+		self.env_name = env_name
+		self.N_PATHS = n_paths
+		self.envs = []
+		for i in range(self.N_PATHS):
+			self.envs.append(gym.make(self.env_name))
+			if self.env_name == "MountainCar-v0":
+				self.envs[-1]._max_episode_steps = 1600
 		self.gamma = gamma
 		self.cg_iters = cg_iters
 		self.cg_damping = cg_damping
@@ -37,7 +45,8 @@ class TRPO:
 		self.residual_tol = residual_tol
 		#os.system("rm -rf mylogs/trpo")
 		current_time = datetime.now().strftime('%b%d_%H-%M-%S')
-		self.writer = tf.summary.create_file_writer(f"mylogs/TRPO-{self.env.unwrapped.spec.id}-{current_time}")
+		self.name = f"mylogs/TRPO-{self.env_name}-{current_time}"
+		self.writer = tf.summary.create_file_writer(self.name)
 		self.model = policy_model
 		self.tmp_model = models.clone_model(self.model)
 		self.value_model = value_model
@@ -50,27 +59,32 @@ class TRPO:
 		self.render = render
 		if render:
 			os.system("touch render")
-		self.N_PATHS = n_paths
 		self.BATCH_SIZE = batch_size
 
-	def __call__(self, ob):
+	def __call__(self, ob, last_action=None):
 		ob = ob[np.newaxis, :]
 		logits = self.model(ob)
 		action_prob = tf.nn.softmax(logits).numpy().ravel()
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
 		# epsilon greedy
 		if np.random.uniform(0,1) < self.epsilon:
-			action = np.random.randint(0,self.env.action_space.n)
+			if np.random.uniform(0,1) < 2*self.epsilon and last_action is not None:
+				action = last_action
+			else:
+				action = np.random.randint(0,self.envs[0].action_space.n)
+				self.last_action = action
 		return action, action_prob
 
 	def sample(self, episode):
-		entropy = 0
-		obs_all, actions_all, rs_all, action_probs_all, Gs_all = [], [], [], [], []
-		mean_total_reward = []
-		mean_entropy = []
-		for path in range(self.N_PATHS):
+		
+		obs_all, actions_all, rs_all, action_probs_all, Gs_all = [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS
+		mean_total_reward = [None]*self.N_PATHS
+		mean_entropy = [None]*self.N_PATHS
+
+		def generate_path(path):
+			entropy = 0
 			obs, actions, rs, action_probs, Gs = [], [], [], [], []
-			ob = self.env.reset()
+			ob = self.envs[path].reset()
 			done = False
 			if len(glob.glob("render")) > 0:
 				self.render = True
@@ -79,9 +93,9 @@ class TRPO:
 			while not done:
 				action, action_prob = self(ob)
 				#self.env.render()
-				new_ob, r, done, info = self.env.step(action)
-				if self.render:
-					self.env.render()
+				new_ob, r, done, info = self.envs[path].step(action)
+				if self.render and path == 0:
+					self.envs[path].render()
 				rs.append(r)
 				obs.append(ob)
 				actions.append(action)
@@ -92,21 +106,31 @@ class TRPO:
 			for r in rs[::-1]:
 				G = r + self.gamma*G
 				Gs.insert(0, G)
-			mean_total_reward.append(sum(rs))
+			mean_total_reward[path] = sum(rs)
 			entropy = entropy / len(actions)
-			mean_entropy.append(entropy)
-			obs_all.extend(obs)
-			actions_all.extend(actions)
-			rs_all.extend(rs)
-			action_probs_all.extend(action_probs)
-			Gs_all.extend(Gs)
+			mean_entropy[path] = entropy
+			obs_all[path] = obs
+			actions_all[path] = actions
+			rs_all[path] = rs
+			action_probs_all[path] = action_probs
+			Gs_all[path] = Gs
+			# print(f"{episode}.{path}: {sum(rs)}")
+
+		threads = []
+		for path in range(self.N_PATHS):
+			thread = threading.Thread(target=generate_path, args=(path,))
+			thread.start()
+			threads.append(thread)
+		for path in range(self.N_PATHS):
+			threads[path].join()
+
 		mean_entropy = np.mean(mean_entropy)
 		mean_total_reward = np.mean(mean_total_reward)
-		Gs_all = np.array(Gs_all)
-		obs_all = np.array(obs_all)
-		rs_all = np.array(rs_all)
-		actions_all = np.array(actions_all)
-		action_probs_all = np.array(action_probs_all)
+		Gs_all = np.concatenate(Gs_all)
+		obs_all = np.concatenate(obs_all)
+		rs_all = np.concatenate(rs_all)
+		actions_all = np.concatenate(actions_all)
+		action_probs_all = np.concatenate(action_probs_all)
 		return obs_all, Gs_all, mean_total_reward, actions_all, action_probs_all, mean_entropy
 
 	def train_step(self, episode, obs_all, Gs_all, actions_all, action_probs_all, total_reward, entropy):
@@ -122,6 +146,7 @@ class TRPO:
 			old_logits = self.model(obs)
 			old_action_prob = tf.nn.softmax(old_logits)
 			old_action_prob = tf.reduce_sum(actions_one_hot * old_action_prob, axis=1).numpy() + 1e-8
+			# old_action_prob = (action_probs * actions_one_hot).sum() + 1e-8
 			prob_ratio = action_prob / old_action_prob # pi(a|s) / pi_old(a|s)
 			loss = -tf.reduce_mean(prob_ratio * advantage) - self.ent_coeff * entropy
 			return loss
@@ -136,6 +161,7 @@ class TRPO:
 			action_prob = tf.nn.softmax(logits).numpy() + 1e-8
 			old_logits = self.model(obs)
 			old_action_prob = tf.nn.softmax(old_logits)
+			# old_action_prob = action_probs
 			return tf.reduce_mean(tf.reduce_sum(old_action_prob * tf.math.log(old_action_prob / (action_prob)), axis=1))
 
 		def hessian_vector_product(p):
@@ -172,17 +198,22 @@ class TRPO:
 		def linesearch(x, fullstep, expected_improve_rate):
 			accept_ratio = .1
 			fval = surrogate_loss(x)
-			for (_n_backtracks, stepfrac) in enumerate(.5**np.arange(self.backtrack_iters)):
+			for (_n_backtracks, stepfrac) in enumerate(self.backtrack_coeff**np.arange(self.backtrack_iters)):
 				xnew = x + stepfrac * fullstep
 				newfval = surrogate_loss(xnew)
 				actual_improve = fval - newfval
 				expected_improve = expected_improve_rate * stepfrac
 				ratio = actual_improve / expected_improve
+				if np.isnan(ratio) or np.isnan(actual_improve):
+					print("Is nan x:", np.isnan(x).any())
+					print("Is nan fval:", np.isnan(fval))
+					print("Is nan xnew:", np.isnan(xnew).any())
+					print("Is nan newfval:", np.isnan(newfval))
+					print("Is nan fullstep:", np.isnan(fullstep))
+					print("Is nan expected_improve_rate:", np.isnan(expected_improve_rate))
 				if ratio > accept_ratio and actual_improve >= 0:
 					return xnew
 				if _n_backtracks == self.backtrack_iters - 1:
-					print(ratio, accept_ratio)
-					print(actual_improve)
 					print("Linesearch failed.")
 			return x
 
@@ -200,7 +231,7 @@ class TRPO:
 			Vs = self.value_model(obs).numpy().flatten()
 			advantage = Gs - Vs
 			advantage = (advantage - advantage.mean())/(advantage.std() + 1e-8)
-			actions_one_hot = tf.one_hot(actions, self.env.action_space.n, dtype="float64")
+			actions_one_hot = tf.one_hot(actions, self.envs[0].action_space.n, dtype="float64")
 			policy_loss = surrogate_loss()
 			if np.isnan(policy_loss):
 				print("policy loss is nan")
@@ -248,6 +279,8 @@ class TRPO:
 		for episode in range(episodes):
 			obs, Gs, total_reward, actions, action_probs, entropy = self.sample(episode)
 			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy)
+			if episode % 10 == 0 and episode != 0:
+				self.model.save_weights(f"{self.name}/{episode}.ckpt")
 			
 			
 			

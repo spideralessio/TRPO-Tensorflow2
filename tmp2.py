@@ -1,23 +1,9 @@
-import tensorflow as tf
+import gym
+from matplotlib import pyplot as plt
+import numpy as np
+env = gym.make("Pong-v0")
 
-x = tf.Variable([[1.],[1.]])
-y = tf.Variable([[2.],[2.]])
-z = tf.Variable([[3.],[3.]])
-f = lambda: (x**3)*(z) + (y)*(z**2)
+obs = env.reset()
 
-def gradient(f, vars):
-	with tf.GradientTape() as t:
-		f = f()
-	grads = t.gradient(f, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)
-	return grads
-
-def hessian_matrix(f, vars):
-	with tf.GradientTape(persistent = True) as t:
-		grads = gradient(f, vars)
-		grad = grads[0]
-	print(grad)
-	h = t.gradient(grad, vars, unconnected_gradients=tf.UnconnectedGradients.ZERO)[0]
-	return h
-
-
-print(hessian_matrix(f, [x]))
+plt.imshow(obs)
+plt.show()
