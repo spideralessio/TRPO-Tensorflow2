@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from PolicyGradient import REINFORCE
-from TRPO2 import TRPO
+from TRPO3 import TRPO
 import os
 from utils import nn_model
 import sys

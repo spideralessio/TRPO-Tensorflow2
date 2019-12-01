@@ -35,6 +35,7 @@ class TRPO:
 		self.N_PATHS = n_paths
 		self.N_THREADS = n_threads
 		self.envs = []
+		assert self.N_PATHS > 0 and self.N_THREADS > 0
 		for i in range(self.N_PATHS):
 			self.envs.append(gym.make(self.env_name))
 			if self.env_name == "MountainCar-v0":
@@ -69,36 +70,49 @@ class TRPO:
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
 		# epsilon greedy
 		if np.random.uniform(0,1) < self.epsilon:
-			if np.random.uniform(0,1) < 2*self.epsilon and last_action is not None:
+			if np.random.uniform(0,1) < 0.8 and last_action is not None:
 				action = last_action
 			else:
 				action = np.random.randint(0,self.envs[0].action_space.n)
 				self.last_action = action
 		return action, action_prob
 
+	def render_episode(self, n=1):
+		for i in range(n):
+			ob = self.envs[0].reset()
+			done = False
+			action = None
+			while not done:
+				self.envs[0].render()
+				action, _ = self(ob, action)
+				ob, r, done, info = self.envs[0].step(action)
+
+	def load_weights(self, path):
+		self.model.load_weights(path)
+
 	def sample(self, episode):
-		
 		obs_all, actions_all, rs_all, action_probs_all, Gs_all = [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS, [None]*self.N_PATHS
 		mean_total_reward = [None]*self.N_PATHS
 		mean_entropy = [None]*self.N_PATHS
+		if len(glob.glob("render")) > 0:
+			self.render = True
+		else:
+			self.render = False
+
+		if self.render:
+			self.render_episode()
 
 		def generate_path(path):
 			entropy = 0
 			obs, actions, rs, action_probs, Gs = [], [], [], [], []
 			ob = self.envs[path].reset()
 			done = False
-			if len(glob.glob("render")) > 0:
-				self.render = True
-			else:
-				self.render = False
+			
 			last_action = None
 			while not done:
 				action, action_prob = self(ob, last_action)
-				#self.env.render()
 				new_ob, r, done, info = self.envs[path].step(action)
 				last_action = action
-				if self.render and path == 0:
-					self.envs[path].render()
 				rs.append(r)
 				obs.append(ob)
 				actions.append(action)
@@ -158,7 +172,7 @@ class TRPO:
 			old_action_prob = tf.reduce_sum(actions_one_hot * old_action_prob, axis=1).numpy() + 1e-8
 			# old_action_prob = (action_probs * actions_one_hot).sum() + 1e-8
 			prob_ratio = action_prob / old_action_prob # pi(a|s) / pi_old(a|s)
-			loss = -tf.reduce_mean(prob_ratio * advantage) - self.ent_coeff * entropy
+			loss = tf.reduce_mean(prob_ratio * advantage) + self.ent_coeff * entropy
 			# print(-tf.reduce_mean(prob_ratio * advantage),  self.ent_coeff * entropy)
 			return loss
 
@@ -214,29 +228,16 @@ class TRPO:
 					print("alpha", np.isnan(alpha))
 			return x
 
-		def linesearch(x, fullstep, expected_improve_rate):
-			accept_ratio = .1
+		def linesearch(x, fullstep):
 			fval = surrogate_loss(x)
 			for (_n_backtracks, stepfrac) in enumerate(self.backtrack_coeff**np.arange(self.backtrack_iters)):
 				xnew = x + stepfrac * fullstep
 				newfval = surrogate_loss(xnew)
-				actual_improve = fval - newfval
-				expected_improve = expected_improve_rate * stepfrac
-				ratio = actual_improve / expected_improve
-				if np.isnan(ratio) or np.isnan(actual_improve):
-					print("Is nan x:", np.isnan(x).any())
-					print("Is nan fval:", np.isnan(fval))
-					print("Is nan xnew:", np.isnan(xnew).any())
-					print("Is nan newfval:", np.isnan(newfval))
-					print("Is nan fullstep:", np.isnan(fullstep).any())
-					print("Is nan expected_improve_rate:", np.isnan(expected_improve_rate))
-					exit(1)
-				if ratio >= accept_ratio and actual_improve >= 0:
+				kl_div = kl_fn(xnew)
+				if kl_div <= self.delta and newfval >= 0:
 					return xnew
 				if _n_backtracks == self.backtrack_iters - 1:
 					print("Linesearch failed.")
-			print(ratio, accept_ratio)
-			print(actual_improve)
 			return x
 
 
@@ -256,33 +257,21 @@ class TRPO:
 			advantage = (advantage - advantage.mean())/(advantage.std() + 1e-8)
 			actions_one_hot = tf.one_hot(actions, self.envs[0].action_space.n, dtype="float64")
 			policy_loss = surrogate_loss()
-			if np.isnan(policy_loss):
-				print("policy loss is nan")
-				print("actions", np.isnan(actions).any())
-				print("obs", np.isnan(obs).any())
-				print("Gs", np.isnan(Gs).any())
-				print("adv", np.isnan(advantage).any())
 			policy_gradient = flatgrad(surrogate_loss, self.model.trainable_variables).numpy()
-			step_direction = conjugate_grad(hessian_vector_product, -policy_gradient)
+			
+
+
+
+			step_direction = conjugate_grad(hessian_vector_product, policy_gradient)
+
 			shs = .5 * step_direction.dot(hessian_vector_product(step_direction).T)
+
 			lm = np.sqrt(shs / self.delta) + 1e-8
 			fullstep = step_direction / lm
-			gdotstepdir = (-policy_gradient).dot(step_direction)
-			if np.isnan(gdotstepdir).any():
-				print("gdotstepdir loss is nan")
-				print("fullstep", np.isnan(fullstep))
-				print("shs", np.isnan(shs))
-				print("policy_gradient", np.isnan(policy_gradient))
-				print("step_direction", np.isnan(step_direction))
-				print("actions", np.isnan(actions).any())
-				print("obs", np.isnan(obs).any())
-				print("Gs", np.isnan(Gs).any())
-				print("adv", np.isnan(advantage).any())
-				exit(1)
-
+			
 			oldtheta = flatvars(self.model).numpy()
 
-			theta = linesearch(oldtheta, fullstep, gdotstepdir/lm)
+			theta = linesearch(oldtheta, fullstep)
 
 
 			if np.isnan(theta).any():
