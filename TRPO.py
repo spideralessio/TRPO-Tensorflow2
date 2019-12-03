@@ -8,6 +8,7 @@ import glob
 from datetime import datetime
 import threading
 import gym
+import time
 
 
 class TRPO:
@@ -145,7 +146,7 @@ class TRPO:
 		action_probs_all = np.concatenate(action_probs_all)
 		return obs_all, Gs_all, mean_total_reward, actions_all, action_probs_all, mean_entropy
 
-	def train_step(self, episode, obs_all, Gs_all, actions_all, action_probs_all, total_reward, entropy):
+	def train_step(self, episode, obs_all, Gs_all, actions_all, action_probs_all, total_reward, entropy, t0):
 		def surrogate_loss(theta=None):
 			if theta is None:
 				model = self.model
@@ -264,7 +265,7 @@ class TRPO:
 			value_loss = history.history["loss"][-1]
 
 
-			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon}")
+			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon} - time {time.time() - t0}")
 
 		writer = self.writer
 		with writer.as_default():
@@ -278,7 +279,8 @@ class TRPO:
 		print("Starting training, saving checkpoints and logs to:", self.name)
 		for episode in range(episodes):
 			obs, Gs, total_reward, actions, action_probs, entropy = self.sample(episode)
-			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy)
+			t0 = time.time()
+			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy, t0)
 			if episode % 10 == 0 and episode != 0:
 				self.model.save_weights(f"{self.name}/{episode}.ckpt")
 
