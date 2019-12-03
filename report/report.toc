@@ -1,5 +1,5 @@
 \contentsline {section}{\numberline {1}Introduction}{2}% 
 \contentsline {section}{\numberline {2}Trust Region Policy Optimization}{2}% 
 \contentsline {section}{\numberline {3}Model Training and Evaluation}{4}% 
-\contentsline {subsection}{\numberline {3.1}MountainCar-v0}{5}% 
+\contentsline {subsection}{\numberline {3.1}MountainCar-v0}{4}% 
 \contentsline {subsection}{\numberline {3.2}Pong-v0}{5}% 

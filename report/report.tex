@@ -12,7 +12,7 @@
 \usepackage{ subcaption }
 \usepackage{algorithm}
 \usepackage{algorithmic}
-\graphicspath{ {./images/} }
+\graphicspath{ {../images/} }
 \author{Alessio Ragno}
 \title{Reinforcement Learning Project Report}
 \date{November 2019}
@@ -35,7 +35,7 @@
         
         \vfill
         
-        \includegraphics[width=0.2\textwidth]{images/sapienza_logo.png}
+        \includegraphics[width=0.2\textwidth]{sapienza_logo.png}
 
 
         
@@ -50,7 +50,7 @@
         Master's Degree in Artificial Intelligence and Robotics\break\break
         Department of Computer, Control and Management Engineering\break\break
         Sapienza University of Rome\break\break
-        November 2019
+        December 2019
 
     \end{center}
 \end{titlepage}
@@ -137,7 +137,27 @@ Since the calculation of the gradients, the conjugate gradient and the linesearc
 This section shows the results obtained in the two environment mentioned above. For MountainCar-v0 using a fully connected was sufficient while for Pong-v0 convolutional layers were needed due to the fact that the state is an image.
 
 The code was fully written in Tensorflow 2.0 using Keras APIs for the construction of the Neural Networks. In Tensorflow 2.0, contrary to Tensorflow 1.x, eager execution is enabled by default and the graph is not kept for the whole execution but only built when needed. This led to multiple nested functions for the calculation of the gradients.
+
 \subsection{MountainCar-v0}
+
+In MountainCar, a car has to climb a hill and reach a goal point taking advantage of the cumulated momentum. At each non-goal step, the agent is given a reward equal to -1 while when the goal is reached the episode is ended.
+
+The gym environment by default sets the maximum number of timesteps to 200. This turned out to be too low since the agent was not capable to reach the goal "randomly" within 200 steps. To ensure proper exploration the limit has been then increased to 1600.
+
+Although this trick helped a little, the agent wasn't still capable of reaching the goal state enough times to learn a good policy. To solve this problem a "correlated $\epsilon$-greedy" algorithm for exploration was added to the policy: With probability $\epsilon$ the agent picks a random action, which is, with probability 0.8 the same of the last action. This increased a lot exploration, since, mostly in this environment, it is very likely that the best action to take at the next step is the same of the just taken one.
+
+The agent was trained for 340 episodes and it converged to a mean total reward of -110 (it takes about 110 steps to reach the goal state). 
+
+Figure \ref{fig:mountaincar_reward} is the plot of the mean total reward over the different states.
+
+It is possible to test this environment using the saved model \textit{"saved\_models/TRPO\-MountainCar\-v0\-Dec01\_21-49\-45/340.ckpt"} with the script "test.py". Also intermediate models have been saved.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{mountaincar_reward.png}
+    \caption{Reward Plot of MountainCar-v0 training}
+    \label{fig:mountaincar_reward}
+\end{figure}
 
 
 \begin{table}[H]
