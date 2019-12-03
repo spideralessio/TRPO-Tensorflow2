@@ -279,8 +279,8 @@ class TRPO:
 		print("Starting training, saving checkpoints and logs to:", self.name)
 		for episode in range(episodes):
 			t0 = time.time()
-			print(f"Sample Time {time.time() - t0}")
 			obs, Gs, total_reward, actions, action_probs, entropy = self.sample(episode)
+			print(f"Sample Time {time.time() - t0}")
 			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy, t0)
 			if episode % 10 == 0 and episode != 0:
 				self.model.save_weights(f"{self.name}/{episode}.ckpt")
