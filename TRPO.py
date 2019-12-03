@@ -13,11 +13,12 @@ import gym
 class TRPO:
 	def __init__(self, env_name, policy_model, value_model=None, value_lr=1e-1, gamma=0.99, delta = 0.01, 
 				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.0, epsilon=0.4,
-				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2):
+				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2, epsilon_decay=lambda x: x - 5e-3):
 		self.env_name = env_name
 		self.N_PATHS = n_paths
 		self.N_THREADS = n_threads
 		self.envs = []
+		self.epsilon_decay = epsilon_decay
 		assert self.N_PATHS > 0 and self.N_THREADS > 0
 		for i in range(self.N_PATHS):
 			self.envs.append(gym.make(self.env_name))
@@ -52,6 +53,8 @@ class TRPO:
 			env.close()
 	def __call__(self, ob, last_action=None):
 		ob = ob[np.newaxis, :]
+		if self.env_name == "Pong-v0":
+			ob = tf.image.crop_to_bounding_box(ob, 33,0,160,160)
 		logits = self.model(ob)
 		action_prob = tf.nn.softmax(logits).numpy().ravel()
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
@@ -268,7 +271,7 @@ class TRPO:
 			tf.summary.scalar("reward", total_reward, step=episode)
 			tf.summary.scalar("value_loss", value_loss, step=episode)
 			tf.summary.scalar("policy_loss", policy_loss, step=episode)
-		self.epsilon -= 5e-3	
+		self.epsilon = self.epsilon_decay(self.epsilon)	
 
 	def train(self, episodes):
 		assert self.value_model is not None
