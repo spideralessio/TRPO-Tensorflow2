@@ -104,6 +104,7 @@ class TRPO:
 			last_action = None
 			while not done:
 				action, action_prob = self(ob, last_action)
+				print(action, action_prob)
 				new_ob, r, done, info = self.envs[path].step(action)
 				last_action = action
 				rs.append(r/self.reward_scaling)
