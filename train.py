@@ -14,7 +14,6 @@ if __name__ == '__main__':
 	print("Using Tensorflow", tf.__version__)
 	tf.keras.backend.set_floatx('float64')
 	env_name = args.env
-
 	mod = importlib.import_module(f"configs.{env_name}")
 	
 	print("Playing in", env_name)
