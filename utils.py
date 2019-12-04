@@ -32,7 +32,6 @@ def assign_vars(model, theta):
 		"""
 		shapes = [v.shape.as_list() for v in model.trainable_variables]	
 		size_theta = np.sum([np.prod(shape) for shape in shapes])
-
 		# self.assign_weights_op = tf.assign(self.flat_weights, self.flat_wieghts_ph)
 		start = 0
 		for i, shape in enumerate(shapes):

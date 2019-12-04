@@ -14,7 +14,7 @@ import time
 class TRPO:
 	def __init__(self, env_name, policy_model, value_model=None, value_lr=1e-1, gamma=0.99, delta = 0.01, 
 				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.0, epsilon=0.4,
-				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2, epsilon_decay=lambda x: x - 5e-3):
+				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2, epsilon_decay=lambda x: x - 5e-3, reward_scaling = 1., correlated_epsilon=False):
 		self.env_name = env_name
 		self.N_PATHS = n_paths
 		self.N_THREADS = n_threads
@@ -44,6 +44,8 @@ class TRPO:
 		self.backtrack_coeff = backtrack_coeff
 		self.backtrack_iters = backtrack_iters
 		self.render = render
+		self.reward_scaling = reward_scaling
+		self.correlated_epsilon = correlated_epsilon
 		if render:
 			os.system("touch render")
 		elif not render and len(glob.glob("render")) > 0:
@@ -61,7 +63,7 @@ class TRPO:
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
 		# epsilon greedy
 		if np.random.uniform(0,1) < self.epsilon:
-			if np.random.uniform(0,1) < 0.8 and last_action is not None:
+			if self.correlated_epsilon and np.random.uniform(0,1) < 0.8 and last_action is not None:
 				action = last_action
 			else:
 				action = np.random.randint(0,self.envs[0].action_space.n)
@@ -104,7 +106,7 @@ class TRPO:
 				action, action_prob = self(ob, last_action)
 				new_ob, r, done, info = self.envs[path].step(action)
 				last_action = action
-				rs.append(r)
+				rs.append(r/self.reward_scaling)
 				obs.append(ob)
 				actions.append(action)
 				action_probs.append(action_prob)
