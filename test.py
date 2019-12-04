@@ -1,8 +1,8 @@
-import gym
 import tensorflow as tf
 from TRPO import TRPO
-from utils import nn_model
 import argparse
+import importlib
+
 
 if __name__ == '__main__':
 
@@ -17,20 +17,14 @@ if __name__ == '__main__':
 	tf.keras.backend.set_floatx('float64')
 	# Generate environment
 	env_name = args.env
+	
+	mod = importlib.import_module(f"configs.{env_name}")
+	
 	print("Playing in", env_name)
 
-	env = gym.make(env_name)
+	policy_model = mod.policy_model
 
-	if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2', 'Pong-ram-v0']:
-		policy_model = nn_model(env.observation_space.shape, env.action_space.n)
-	elif env_name == 'Pong-v0':
-		policy_model = nn_model(env.observation_space.shape, env.action_space.n, convolutional=True)
-	else:
-		raise NotImplementedError(f"Not implemented environment {env_name}")
-	
-	env.close()
-
-	agent = TRPO(env_name, policy_model)
+	agent = TRPO(env_name, policy_model, **mod.config)
 	episodes = args.episodes
 	agent.load_weights(args.ckpt)
 	agent.render_episode(episodes)
