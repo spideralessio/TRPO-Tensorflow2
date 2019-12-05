@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
 	policy_model = mod.policy_model
 
-	agent = TRPO(env_name, policy_model, **mod.config)
+	agent = TRPO(env_name, policy_model, epsilon=0, **mod.config)
 	episodes = args.episodes
 	agent.load_weights(args.ckpt)
 	agent.render_episode(episodes)

@@ -32,13 +32,13 @@ class TRPO:
 		self.residual_tol = residual_tol
 		current_time = datetime.now().strftime('%b%d_%H-%M-%S')
 		self.name = f"mylogs/TRPO-{self.env_name}-{current_time}"
-		self.writer = tf.summary.create_file_writer(self.name)
 		self.model = policy_model
 		self.tmp_model = models.clone_model(self.model)
 		self.value_model = value_model
 		if self.value_model:
 			self.value_optimizer = optimizers.Adam(lr=value_lr)
 			self.value_model.compile(self.value_optimizer, "mse")
+			self.writer = tf.summary.create_file_writer(self.name)
 		self.delta = delta
 		self.epsilon = epsilon
 		self.backtrack_coeff = backtrack_coeff
@@ -78,7 +78,6 @@ class TRPO:
 			while not done:
 				self.envs[0].render()
 				action, _ = self(ob, action)
-				print(action, _)
 				ob, r, done, info = self.envs[0].step(action)
 
 	def load_weights(self, path):
@@ -269,12 +268,12 @@ class TRPO:
 
 
 			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon} - time {time.time() - t0}")
-
-		writer = self.writer
-		with writer.as_default():
-			tf.summary.scalar("reward", total_reward, step=episode)
-			tf.summary.scalar("value_loss", value_loss, step=episode)
-			tf.summary.scalar("policy_loss", policy_loss, step=episode)
+		if self.value_model:
+			writer = self.writer
+			with writer.as_default():
+				tf.summary.scalar("reward", total_reward, step=episode)
+				tf.summary.scalar("value_loss", value_loss, step=episode)
+				tf.summary.scalar("policy_loss", policy_loss, step=episode)
 		self.epsilon = self.epsilon_decay(self.epsilon)	
 
 	def train(self, episodes):
@@ -285,7 +284,7 @@ class TRPO:
 			obs, Gs, total_reward, actions, action_probs, entropy = self.sample(episode)
 			print(f"Sample Time {time.time() - t0}")
 			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy, t0)
-			if episode % 10 == 0 and episode != 0:
+			if episode % 10 == 0 and episode != 0 and self.value_model:
 				self.model.save_weights(f"{self.name}/{episode}.ckpt")
 
 			
