@@ -57,7 +57,7 @@ class TRPO:
 	def __call__(self, ob, last_action=None):
 		ob = ob[np.newaxis, :]
 		# if self.env_name == "Pong-v0":
-			# ob = tf.image.crop_to_bounding_box(ob, 33,0,160,160)
+			# ob =
 		logits = self.model(ob)
 		action_prob = tf.nn.softmax(logits).numpy().ravel()
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)

@@ -29,7 +29,7 @@ def nn_model(input_shape, output_shape, convolutional=False):
 def nn_model2(input_shape, output_shape, convolutional=False):
 	model = keras.Sequential()
 	if convolutional:
-		model.add(layers.Lambda(lambda x: tf.cast(tf.image.resize(tf.image.rgb_to_grayscale(x), size=(32,32)), dtype=tf.float64)/256., input_shape=input_shape))
+		model.add(layers.Lambda(lambda x: tf.cast(tf.image.resize(tf.image.rgb_to_grayscale(tf.image.crop_to_bounding_box(ob, 33,0,160,160)), size=(32,32)), dtype=tf.float64)/256., input_shape=input_shape))
 		model.add(layers.Conv2D(20, (3, 3), activation='relu'))
 		model.add(layers.MaxPooling2D((3, 3)))
 		model.add(layers.Conv2D(20, (3, 3), activation='relu'))
