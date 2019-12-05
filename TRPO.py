@@ -58,6 +58,7 @@ class TRPO:
 		ob = ob[np.newaxis, :]
 		if self.env_name == "Pong-v0":
 			ob = tf.image.crop_to_bounding_box(ob, 33,0,160,160)
+			ob = tf.cast(tf.image.resize(tf.image.rgb_to_grayscale(ob), size=(32,32))
 		logits = self.model(ob)
 		action_prob = tf.nn.softmax(logits).numpy().ravel()
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
@@ -222,7 +223,8 @@ class TRPO:
 					print("Linesearch failed.")
 			return x
 
-
+		print(len(obs_all))
+		print(self.model.summary())
 		NBATCHES = len(obs_all) // self.BATCH_SIZE 
 		if len(obs_all) < self.BATCH_SIZE:
 			NBATCHES += 1

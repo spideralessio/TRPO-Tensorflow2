@@ -30,9 +30,9 @@ def nn_model2(input_shape, output_shape, convolutional=False):
 	model = keras.Sequential()
 	if convolutional:
 		model.add(layers.Lambda(lambda x: tf.cast(tf.image.resize(tf.image.rgb_to_grayscale(x), size=(32,32)), dtype=tf.float64)/256., input_shape=input_shape))
-		model.add(layers.Conv2D(10, (3, 3), activation='relu'))
+		model.add(layers.Conv2D(20, (3, 3), activation='relu'))
 		model.add(layers.MaxPooling2D((3, 3)))
-		model.add(layers.Conv2D(5, (3, 3), activation='relu'))
+		model.add(layers.Conv2D(20, (3, 3), activation='relu'))
 		model.add(layers.MaxPooling2D((3, 3)))
 		model.add(layers.Flatten())
 	# else:
