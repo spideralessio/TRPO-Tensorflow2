@@ -23,8 +23,8 @@ if __name__ == '__main__':
 	print("Playing in", env_name)
 
 	policy_model = mod.policy_model
-
-	agent = TRPO(env_name, policy_model, epsilon=0, **mod.config)
+	env = mod.env
+	agent = TRPO(env_name, env, policy_model, epsilon=0, **mod.config)
 	episodes = args.episodes
 	agent.load_weights(args.ckpt)
 	agent.render_episode(episodes)

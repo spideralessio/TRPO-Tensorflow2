@@ -9,10 +9,10 @@ from datetime import datetime
 import threading
 import gym
 import time
-
+import copy
 
 class TRPO:
-	def __init__(self, env_name, policy_model, value_model=None, value_lr=1e-1, gamma=0.99, delta = 0.01, 
+	def __init__(self, env_name, env, policy_model, value_model=None, value_lr=1e-1, gamma=0.99, delta = 0.01, 
 				cg_damping=0.001, cg_iters=10, residual_tol=1e-5, ent_coeff=0.0, epsilon=0.4,
 				backtrack_coeff=0.6, backtrack_iters=10, render=False, batch_size=4096, n_paths=10, n_threads=2, epsilon_decay=lambda x: x - 5e-3, reward_scaling = 1., correlated_epsilon=False):
 		self.env_name = env_name
@@ -22,9 +22,7 @@ class TRPO:
 		self.epsilon_decay = epsilon_decay
 		assert self.N_PATHS > 0 and self.N_THREADS > 0
 		for i in range(self.N_PATHS):
-			self.envs.append(gym.make(self.env_name))
-			if self.env_name == "MountainCar-v0":
-				self.envs[-1]._max_episode_steps = 1600
+			self.envs.append(copy.deepcopy(env))
 		self.gamma = gamma
 		self.cg_iters = cg_iters
 		self.cg_damping = cg_damping
@@ -56,8 +54,6 @@ class TRPO:
 			env.close()
 	def __call__(self, ob, last_action=None):
 		ob = ob[np.newaxis, :]
-		# if self.env_name == "Pong-v0":
-			# ob =
 		logits = self.model(ob)
 		action_prob = tf.nn.softmax(logits).numpy().ravel()
 		action = np.random.choice(range(action_prob.shape[0]), p=action_prob)
@@ -67,9 +63,9 @@ class TRPO:
 				action = last_action
 			else:
 				action = np.random.randint(0,self.envs[0].action_space.n)
-				self.last_action = action
+		self.last_action = action
+		# print(action, action_prob)
 		return action, action_prob
-
 	def render_episode(self, n=1):
 		for i in range(n):
 			ob = self.envs[0].reset()
@@ -140,15 +136,16 @@ class TRPO:
 
 
 		mean_entropy = np.mean(mean_entropy)
+		best_reward = np.max(mean_total_reward)
 		mean_total_reward = np.mean(mean_total_reward)
 		Gs_all = np.concatenate(Gs_all)
 		obs_all = np.concatenate(obs_all)
 		rs_all = np.concatenate(rs_all)
 		actions_all = np.concatenate(actions_all)
 		action_probs_all = np.concatenate(action_probs_all)
-		return obs_all, Gs_all, mean_total_reward, actions_all, action_probs_all, mean_entropy
+		return obs_all, Gs_all, mean_total_reward, best_reward, actions_all, action_probs_all, mean_entropy
 
-	def train_step(self, episode, obs_all, Gs_all, actions_all, action_probs_all, total_reward, entropy, t0):
+	def train_step(self, episode, obs_all, Gs_all, actions_all, action_probs_all, total_reward, best_reward, entropy, t0):
 		def surrogate_loss(theta=None):
 			if theta is None:
 				model = self.model
@@ -216,10 +213,17 @@ class TRPO:
 				xnew = x + stepfrac * fullstep
 				newfval = surrogate_loss(xnew)
 				kl_div = kl_fn(xnew)
+				if np.isnan(kl_div):
+					print("kl is nan")
+					print("xnew", np.isnan(xnew))
+					print("x", np.isnan(x))
+					print("stepfrac", np.isnan(stepfrac))
+					print("fullstep",  np.isnan(fullstep))
 				if kl_div <= self.delta and newfval >= 0:
+					print("Linesearch worked at ", _n_backtracks)
 					return xnew
 				if _n_backtracks == self.backtrack_iters - 1:
-					print("Linesearch failed.")
+					print("Linesearch failed.", kl_div, newfval)
 			return x
 
 		NBATCHES = len(obs_all) // self.BATCH_SIZE 
@@ -249,6 +253,11 @@ class TRPO:
 
 			lm = np.sqrt(shs / self.delta) + 1e-8
 			fullstep = step_direction / lm
+			if np.isnan(fullstep).any():
+				print("fullstep is nan")
+				print("lm", lm)
+				print("step_direction", step_direction)
+				print("policy_gradient", policy_gradient)
 			
 			oldtheta = flatvars(self.model).numpy()
 
@@ -266,11 +275,12 @@ class TRPO:
 			value_loss = history.history["loss"][-1]
 
 
-			print(f"Ep {episode}.{batch_id}: Rw {total_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon} - time {time.time() - t0}")
+			print(f"Ep {episode}.{batch_id}: Rw_mean {total_reward} - Rw_best {best_reward} - PL {policy_loss} - VL {value_loss} - KL {kl} - epsilon {self.epsilon} - time {time.time() - t0}")
 		if self.value_model:
 			writer = self.writer
 			with writer.as_default():
 				tf.summary.scalar("reward", total_reward, step=episode)
+				tf.summary.scalar("best_reward", best_reward, step=episode)
 				tf.summary.scalar("value_loss", value_loss, step=episode)
 				tf.summary.scalar("policy_loss", policy_loss, step=episode)
 		self.epsilon = self.epsilon_decay(self.epsilon)	
@@ -280,9 +290,9 @@ class TRPO:
 		print("Starting training, saving checkpoints and logs to:", self.name)
 		for episode in range(episodes):
 			t0 = time.time()
-			obs, Gs, total_reward, actions, action_probs, entropy = self.sample(episode)
+			obs, Gs, total_reward, best_reward, actions, action_probs, entropy = self.sample(episode)
 			print(f"Sample Time {time.time() - t0}")
-			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, entropy, t0)
+			total_loss = self.train_step(episode, obs, Gs, actions, action_probs, total_reward, best_reward, entropy, t0)
 			if episode % 10 == 0 and episode != 0 and self.value_model:
 				self.model.save_weights(f"{self.name}/{episode}.ckpt")
 

@@ -9,7 +9,7 @@ config = {
 	"epsilon_decay" : lambda x: max(0.1, x - 1e-3),
 	"n_paths" : 20,
 	"gamma" : 0.99,
-	"batch_size" : 10000,
+	"batch_size" :10000,
 }
 
 class ChangeActionSpaceEnv(gym.Wrapper):
@@ -17,7 +17,8 @@ class ChangeActionSpaceEnv(gym.Wrapper):
 		"""Take action on reset for environments that are fixed until firing."""
 		gym.Wrapper.__init__(self, env)
 		self.action_space = gym.spaces.Discrete(3)
-		self.observation_space = gym.spaces.Box(low = 0, high =160, dtype=np.uint8, shape=(3,))
+		self.observation_space = gym.spaces.Box(low = 0, high =160, dtype=np.uint8, shape=(6,))
+		self.last_ob = None		
 
 	def get_ob(self, ob):
 		try:
@@ -36,12 +37,18 @@ class ChangeActionSpaceEnv(gym.Wrapper):
 			# player_x = xs[0]
 			player_y = ys[0]
 			new_ob = np.array([ball_x, ball_y, player_y])
-			return new_ob
+			last_ob = self.last_ob
+			self.last_ob = new_ob
+			if last_ob is not None:
+				return np.concatenate((new_ob, last_ob))
+			else:
+				return np.concatenate((new_ob, new_ob))
 		except:
 			plt.imshow(ob)
 			plt.show()
 
 	def reset(self):
+		self.last_ob = None
 		self.env.reset()
 		for i in range(58):
 			self.env.step(1)
@@ -73,5 +80,5 @@ class ChangeActionSpaceEnv(gym.Wrapper):
 env = gym.make("Pong-v0", difficulty=0, frameskip=1)
 env = ChangeActionSpaceEnv(env)
 
-policy_model = nn_model((3,), 3)
-value_model = nn_model((3,), 1)
+policy_model = nn_model((6,), 3)
+value_model = nn_model((6,), 1)

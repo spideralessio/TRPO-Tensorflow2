@@ -2,10 +2,10 @@ from utils import nn_model2
 
 config = {
 	"correlated_epsilon" : True,
-	# "epsilon_decay" : lambda x: x - 1e-3,
-	"gamma" : 0.85,
+	"epsilon_decay" : lambda x: x,
+	"gamma" : 0.9,
 	"epsilon" : 0.4,
-	"n_paths" : 50,
+	"n_paths" : 15,
 }
 
 # if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2', 'Pong-ram-v0']:

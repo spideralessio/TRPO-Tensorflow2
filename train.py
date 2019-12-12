@@ -22,7 +22,7 @@ if __name__ == '__main__':
 	policy_model = mod.policy_model
 	value_model = mod.value_model
 
-	agent = TRPO(env_name, policy_model, value_model, render=args.render, **mod.config)
+	agent = TRPO(env_name, mod.env, policy_model, value_model, render=args.render, **mod.config)
 	episodes = args.episodes
 	agent.train(episodes)
 	agent.close()
