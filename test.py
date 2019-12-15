@@ -3,7 +3,6 @@ from TRPO import TRPO
 import argparse
 import importlib
 
-
 if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description="Test TRPO Agent.")

@@ -64,7 +64,6 @@ class TRPO:
 			else:
 				action = np.random.randint(0,self.envs[0].action_space.n)
 		self.last_action = action
-		# print(action, action_prob)
 		return action, action_prob
 	def render_episode(self, n=1):
 		for i in range(n):
@@ -196,6 +195,7 @@ class TRPO:
 			for _ in range(self.cg_iters):
 				z = Ax(p)
 				alpha = r_dot_old / (np.dot(p, z) + 1e-8)
+				old_x = x
 				x += alpha * p
 				r -= alpha * z
 				r_dot_new = np.dot(r,r)
@@ -205,6 +205,11 @@ class TRPO:
 					break
 				old_p = p.copy()
 				p = r + beta * p
+				if np.isnan(x).any():
+					print("x is nan")
+					print("z", np.isnan(z))
+					print("old_x", np.isnan(old_x))
+					print("kl_fn", np.isnan(kl_fn()))
 			return x
 
 		def linesearch(x, fullstep):

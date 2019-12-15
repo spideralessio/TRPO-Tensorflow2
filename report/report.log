@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2019.11.25)  2 DEC 2019 21:16
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2019.12.14)  15 DEC 2019 17:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -313,21 +313,21 @@ e
 ))
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-<../images/sapienza_logo.png, id=1, 158.5925pt x 192.72pt>
-File: ../images/sapienza_logo.png Graphic file (type png)
-<use ../images/sapienza_logo.png>
-Package pdftex.def Info: ../images/sapienza_logo.png  used on input line 38.
+<images/sapienza_logo.png, id=1, 158.5925pt x 192.72pt>
+File: images/sapienza_logo.png Graphic file (type png)
+<use images/sapienza_logo.png>
+Package pdftex.def Info: images/sapienza_logo.png  used on input line 38.
 (pdftex.def)             Requested size: 77.99881pt x 94.7865pt.
 
 [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <../images/sapienza_logo.pn
-g>] (./report.toc
-LaTeX Font Info:    Try loading font information for U+msa on input line 4.
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./images/sapienza_logo.png
+>] (./report.toc
+LaTeX Font Info:    Try loading font information for U+msa on input line 5.
  (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 4.
+LaTeX Font Info:    Try loading font information for U+msb on input line 5.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
@@ -336,50 +336,89 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 \openout3 = `report.toc'.
 
  [1]
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 72.
+<images/MountainCar-Victory.png, id=15, 579.74835pt x 440.76758pt>
+File: images/MountainCar-Victory.png Graphic file (type png)
+<use images/MountainCar-Victory.png>
+Package pdftex.def Info: images/MountainCar-Victory.png  used on input line 71.
+
+(pdftex.def)             Requested size: 155.99762pt x 118.59857pt.
+<images/Pong-Victory.png, id=16, 230.31099pt x 289.87418pt>
+File: images/Pong-Victory.png Graphic file (type png)
+<use images/Pong-Victory.png>
+Package pdftex.def Info: images/Pong-Victory.png  used on input line 75.
+(pdftex.def)             Requested size: 155.99762pt x 196.35104pt.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 87.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <12> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 72.
- [2] [3] [4]
-Overfull \hbox (43.01639pt too wide) in paragraph at lines 153--154
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 87.
+ [2 <./images/MountainCar-Victory.png> <./images/Pong-Victory.png>] [3] [4]
+<images/MountainCar-v0.png, id=36, 528.9211pt x 342.28978pt>
+File: images/MountainCar-v0.png Graphic file (type png)
+<use images/MountainCar-v0.png>
+Package pdftex.def Info: images/MountainCar-v0.png  used on input line 160.
+(pdftex.def)             Requested size: 195.0pt x 126.19606pt.
+ [5 <./images/MountainCar-v0.png (PNG copy)>]
+Overfull \hbox (77.96672pt too wide) in paragraph at lines 175--176
 []\OT1/cmr/m/n/12 It is pos-si-ble to test this en-vi-ron-ment us-ing the saved
- model \OT1/cmr/m/it/12 "saved[]models/TRPO-
+ model \OT1/cmr/m/it/12 "saved[]models/MountainCar-
  []
 
-<../images/mountaincar_reward.png, id=32, 351.3125pt x 213.79875pt>
-File: ../images/mountaincar_reward.png Graphic file (type png)
-<use ../images/mountaincar_reward.png>
-Package pdftex.def Info: ../images/mountaincar_reward.png  used on input line 1
-57.
-(pdftex.def)             Requested size: 195.0pt x 118.67601pt.
-[5 <../images/mountaincar_reward.png>] (./report.aux) ) 
+<images/Pong-v4.png, id=40, 538.4512pt x 339.90726pt>
+File: images/Pong-v4.png Graphic file (type png)
+<use images/Pong-v4.png>
+Package pdftex.def Info: images/Pong-v4.png  used on input line 183.
+(pdftex.def)             Requested size: 117.00119pt x 73.85661pt.
+<images/Pong-v4_mean.png, id=41, 668.69604pt x 426.47241pt>
+File: images/Pong-v4_mean.png Graphic file (type png)
+<use images/Pong-v4_mean.png>
+Package pdftex.def Info: images/Pong-v4_mean.png  used on input line 188.
+(pdftex.def)             Requested size: 117.00119pt x 74.61426pt.
+[6 <./images/Pong-v4.png (PNG copy)> <./images/Pong-v4_mean.png (PNG copy)>]
+<images/CartPole-v0.png, id=47, 537.65703pt x 340.70143pt>
+File: images/CartPole-v0.png Graphic file (type png)
+<use images/CartPole-v0.png>
+Package pdftex.def Info: images/CartPole-v0.png  used on input line 215.
+(pdftex.def)             Requested size: 117.00119pt x 74.13835pt.
+<images/Acrobot-v1.png, id=48, 524.95023pt x 335.93637pt>
+File: images/Acrobot-v1.png Graphic file (type png)
+<use images/Acrobot-v1.png>
+Package pdftex.def Info: images/Acrobot-v1.png  used on input line 220.
+(pdftex.def)             Requested size: 117.00119pt x 74.8699pt.
+<images/LunarLander-v2.png, id=49, 525.7444pt x 339.90726pt>
+File: images/LunarLander-v2.png Graphic file (type png)
+<use images/LunarLander-v2.png>
+Package pdftex.def Info: images/LunarLander-v2.png  used on input line 225.
+(pdftex.def)             Requested size: 117.00119pt x 75.6408pt.
+
+[7 <./images/CartPole-v0.png (PNG copy)> <./images/Acrobot-v1.png (PNG copy)> <
+./images/LunarLander-v2.png (PNG copy)>] (./report.aux) ) 
 Here is how much of TeX's memory you used:
- 4627 strings out of 492615
- 66325 string characters out of 6131389
- 152227 words of memory out of 5000000
- 8455 multiletter control sequences out of 15000+600000
- 11055 words of font info for 41 fonts, out of 8000000 for 9000
+ 4678 strings out of 492615
+ 67487 string characters out of 6131389
+ 150317 words of memory out of 5000000
+ 8499 multiletter control sequences out of 15000+600000
+ 11355 words of font info for 42 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 42i,9n,40p,539b,585s stack positions out of 5000i,500n,10000p,200000b,80000s
-</usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/fonts/type1
-/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public
-/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfon
-ts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr/
-share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texlive
-/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on report.pdf (6 pages, 183852 bytes).
+ 42i,8n,40p,591b,585s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texlive/te
+xmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/share/texlive/texmf-di
+st/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/type1/publ
+ic/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.
+pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></us
+r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.pfb>
+Output written on report.pdf (8 pages, 439244 bytes).
 PDF statistics:
- 75 PDF objects out of 1000 (max. 8388607)
- 51 compressed objects within 1 object stream
+ 92 PDF objects out of 1000 (max. 8388607)
+ 57 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 11 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 46 words of extra memory for PDF output out of 10000 (max. 10000000)
 

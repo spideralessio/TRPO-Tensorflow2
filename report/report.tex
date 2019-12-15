@@ -12,7 +12,7 @@
 \usepackage{ subcaption }
 \usepackage{algorithm}
 \usepackage{algorithmic}
-\graphicspath{ {../images/} }
+\graphicspath{ {images/} }
 \author{Alessio Ragno}
 \title{Reinforcement Learning Project Report}
 \date{November 2019}
@@ -63,20 +63,35 @@
 
 \section{Introduction}
 
-What follows is the report for the Reinforcement Learning Implementation Project of Machine Learning Class at Artificial Intelligence and Robotics Course.
+\section{Additional Tests and Conclusions}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[a]{0.4\textwidth}
+        \includegraphics[width=\textwidth]{MountainCar-Victory}
+        \caption{MountainCar-v0}
+    \end{subfigure}
+    \begin{subfigure}[a]{0.4\textwidth}
+        \includegraphics[width=\textwidth]{Pong-Victory}
+        \caption{Pong-v4}
+    \end{subfigure}
+    \caption{Environments}
+\end{figure}
+
+What follows is the report for the Reinforcement Learning Implementation Project of Machine Learning Class of Master-s Degree in Artificial Intelligence and Robotics.
 
 The project consists in the implementation of an assigned Reinfocement Learning algorithm and its evaluation in two different environments.
 
 The assigned algorithm is Trust Region Policy Optimization (TRPO) and it has to be evaluated on the following OpenAI Gym environments:
 \begin{itemize}
     \item \textbf{MountainCar-v0} is an environment in which a car has to climb a hill and reach a specific point indicated by a flag. MountainCar-v0 is a continuous state space environment that can be controlled with discrete actions. At each timestep the agent can choose between three actions: pushing the car left, right or not applying any force to the car.
-    \item \textbf{Pong-v0} is an environment in which the agent has to play Pong game against a virtual player. The state is the image of the game and the agent acts using the Atari 2600 commands: NOOP, FIRE, RIGHT, LEFT, RIGHTFIRE, LEFTFIRE.
+    \item \textbf{Pong-v4} is an environment in which the agent has to play Pong game against a virtual player. The state is the image of the game and the agent acts using the Atari 2600 commands: NOOP, FIRE, RIGHT, LEFT, RIGHTFIRE, LEFTFIRE. For this project Pong-v4 has been used instead of Pong-v0 since the former is deterministic.
 \end{itemize}
 
 \section{Trust Region Policy Optimization}
 
 Trust Region Policy Optimization was published by John Schulman, Sergey Levine, Philipp Moritz, Michael I. Jordan and Pieter Abbeel on April 2017. 
-TRPO is an improvement of the vanilla Policy Gradient algorithm implemented by REINFORCE with baseline. TRPO aims to make gradient step which are not "too big" to improve the algorithm stability. The length of the step is defined in terms of a hyperparameter $\delta$ which represents the size of the trust region.
+TRPO is an improvement of the vanilla Policy Gradient algorithm implemented by REINFORCE with baseline. TRPO aims to make gradient step which are not "too big" to improve the algorithm stability. The length of the step is defined in terms of a hyperparameter $\delta$ which represents the radius of the trust region.
 
 \begin{algorithm}[H]
     \caption{TRPO}
@@ -118,29 +133,36 @@ TRPO is an improvement of the vanilla Policy Gradient algorithm implemented by R
 \label{alg:TRPO2}
 \end{algorithm}
 
-Algorithm \ref{alg:TRPO} shows the basic TRPO pseudocode. 
+Algorithm \ref{alg:TRPO} shows the basic TRPO idea in pseudocode: It actually consists in a Vanilla Policy Gradient with the constraint of taking only "improving" steps.
 
 To implement TRPO, the authors suggest to maximize the vanilla policy gradient (which they call surrogate loss) and at the same time minimize the KL divergence calculating the hessian vector product with the surrogate loss gradient.
 
-After generating the step direction using conjugate gradients direction the algorithm uses linesearch to find the right stepsize.
+After generating the step direction using conjugate gradients, the algorithm uses linesearch to find the right stepsize.
 
 Applying the suggested calculation we obtain Algorithm \ref{alg:TRPO2}.
 
 In the paper, the authors showed the hyperparameters used in each environment and it turned out that using $K=10$ maximum backtracking steps for the line search is sufficient.
 
-Increasing $\delta$ the algorithm becomes more "aggressive" and at the same time unstable, while decreasing it, the algorithm becomes slower. The authors showed that using $\delta=0.01$ is a good tradeoff between velocity and stability.
+Increasing $\delta$ the algorithm becomes more "aggressive" and at the same time unstable, while decreasing it, the algorithm learns slower but it is more cautious. The authors showed that using $\delta=0.01$ is a good tradeoff between velocity and stability.
 
-Since the calculation of the gradients, the conjugate gradient and the linesearch make this algorithm computationally expensive, a more efficient and improved version was later published as Proximal Policy Optimization (PPO) by Schulman.
+Since the calculation of the gradients, the conjugate gradient and the linesearch make this algorithm computationally expensive, a more efficient and improved version was later published as Proximal Policy Optimization (PPO) by Schulman et al..
 
 \section{Model Training and Evaluation}
  
-This section shows the results obtained in the two environment mentioned above. For MountainCar-v0 using a fully connected was sufficient while for Pong-v0 convolutional layers were needed due to the fact that the state is an image.
+This section shows the results obtained in the two environment mentioned above. For MountainCar-v0 using a fully connected was sufficient while for Pong-v0, which gives an image as observation, some tricks were necessary.
 
 The code was fully written in Tensorflow 2.0 using Keras APIs for the construction of the Neural Networks. In Tensorflow 2.0, contrary to Tensorflow 1.x, eager execution is enabled by default and the graph is not kept for the whole execution but only built when needed. This led to multiple nested functions for the calculation of the gradients.
 
 \subsection{MountainCar-v0}
 
-In MountainCar, a car has to climb a hill and reach a goal point taking advantage of the cumulated momentum. At each non-goal step, the agent is given a reward equal to -1 while when the goal is reached the episode is ended.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{MountainCar-v0.png}
+    \caption{MountainCar-v0}
+    \label{fig:MountainCar-v0}
+\end{figure}
+
+In MountainCar, a car has to climb a hill and reach a goal point taking advantage of the cumulated momentum. At each non-goal step, the agent is given a reward equal to -1 while when the goal is reached the episode is ended. The observation consists in the current position and velocity of the car.
 
 The gym environment by default sets the maximum number of timesteps to 200. This turned out to be too low since the agent was not capable to reach the goal "randomly" within 200 steps. To ensure proper exploration the limit has been then increased to 1600.
 
@@ -148,40 +170,69 @@ Although this trick helped a little, the agent wasn't still capable of reaching 
 
 The agent was trained for 340 episodes and it converged to a mean total reward of -110 (it takes about 110 steps to reach the goal state). 
 
-Figure \ref{fig:mountaincar_reward} is the plot of the mean total reward over the different states.
+Figure \ref{fig:MountainCar-v0} is the plot of the mean total reward over the different training epochs.
 
-It is possible to test this environment using the saved model \textit{"saved\_models/TRPO\-MountainCar\-v0\-Dec01\_21-49\-45/340.ckpt"} with the script "test.py". Also intermediate models have been saved.
+It is possible to test this environment using the saved model \textit{"saved\_models/MountainCar\-v0/340.ckpt"} with the script "test.py". Also intermediate models have been saved.
+
+
+\subsection{Pong-v4}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.5\textwidth]{mountaincar_reward.png}
-    \caption{Reward Plot of MountainCar-v0 training}
-    \label{fig:mountaincar_reward}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{Pong-v4.png}
+        \caption{Pong-v4}
+        \label{fig:Max Reward}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{Pong-v4_mean.png}
+        \caption{Pong-v4}
+        \label{fig:Mean Reward}
+    \end{subfigure}
+    \caption{Pong-v4}
+    \label{fig:Pong-v4}
+
 \end{figure}
 
+In Pong, the agent has to play Pong game using a simulated Atari 2600 console. The observation consists in the image perceived by the agent while the reward is the difference between the agent score and the opponent one.
 
-\begin{table}[H]
-\centering
-\begin{tabular}{llllll}
-\hline
-feature & clang  & gcc    & icc    & H      & L      \\ \hline
-0       & 300599 & 259228 & 256805 & 453070 & 363562 \\
-cmp3    & 53406  & 44174  & 44225  & 76154  & 65651  \\
-cwde0   & 22     & 724    & 0      & 37     & 709    \\
-dec2    & 573    & 173    & 374    & 802    & 318    \\
-leave0  & 3      & 1317   & 5749   & 11     & 7058   \\
-movapd3 & 2515   & 130    & 0      & 1969   & 676    \\
-movaps2 & 965    & 710    & 4316   & 4777   & 1214   \\
-movhps3 & 0      & 8      & 143    & 149    & 2      \\
-movlpd3 & 64     & 1594   & 4      & 748    & 914    \\
-xorps3  & 18     & 31     & 311    & 284    & 76     \\ \hline
-\end{tabular}
-\caption{Frequency of tokens over the different classes}
-\label{tab:features-frequencies}
-\end{table}
-\subsection{Pong-v0}
+The paper reports that for training Atari environments it took about 30hrs for them. Since a gpu wasn't available, the observation needed to be preprocessed. To make the learning process not too long, the agent was given as observation 3 integers which represent the position of the ball in the image and the height of the agent's stick. This preprocessing speeded up not only the training phase but also the sampling one. Not only the state space was reduced, but also the action one: not all the actions are necessary, so I decided to limit the action space to RIGHT and LEFT.
+
+Moreover, to train Atari environments, the authors suggest to use vine sampling which consists in saving a state and performing different actions starting from the same state. This is unfortunally impossible to apply on all environments since it requires restoring a previous state and it is also very computationally expensive.
+
+Altough reducing the input space to 3 integers helped a lot, the exploration phase was still too long. I decided to give it a hand by applying the optimal policy instead of a random one with $\epsilon$-greedy. This helped a lot, the algorithm was not only able to see a lot of space but it also learnt very quickly.
+
+Figure \ref{fig:Pong-v4} is the plot of the mean total reward and the max reward over the different training epochs.
+It is not possible to say that this environment has been solved since it doesn't actually reach a mean reward of 21, but given the complexity of the game and that the calculator architecture was probably not good as the authors one, these are quite good results.
+It is possible to test this environment using the saved model \textit{"saved\_models/Pong-v4\-v0/340.ckpt"} with the script "test.py". Also intermediate models have been saved.
 
 
+\section{Additional Tests and Conclusions}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{CartPole-v0.png}
+        \caption{CartPole-v0}
+        \label{fig:CartPole-v0}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{Acrobot-v1.png}
+        \caption{Acrobot-v1}
+        \label{fig:Acrobot-v1}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.3\textwidth}
+        \includegraphics[width=\textwidth]{LunarLander-v2}
+        \caption{LunarLander-v2}
+        \label{fig:LunarLander-v2}
+    \end{subfigure}
+    \caption{Additional Environments}
+
+    \label{fig:AdditionalEnvironments}
+
+\end{figure}
+
+Some additional tests have been run over different environments. In particular, three more environments have been tried out. Figure \ref{fig:AdditionalEnvironments} shows the reward plots of the training phases of CartPole-v0, Acrobot-v1 and LunarLander-v2. Also for these three environments pretrained models are given.
 \end{document}
 
 

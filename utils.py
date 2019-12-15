@@ -8,7 +8,7 @@ import numpy as np
 def flatgrad(loss_fn, var_list):
 	with tf.GradientTape() as t:
 		loss = loss_fn()
-	grads = t.gradient(loss, var_list, unconnected_gradients=tf.UnconnectedGradients.NONE)
+	grads = t.gradient(loss, var_list, unconnected_gradients=tf.UnconnectedGradients.ZERO)
 	return tf.concat([tf.reshape(g, [-1]) for g in grads], axis=0)
 
 def nn_model(input_shape, output_shape, convolutional=False):

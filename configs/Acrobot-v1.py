@@ -1,9 +1,10 @@
 from utils import nn_model
-
+import gym
 config = {
 	# "correlated_epsilon" : True
 }
 
-# if env_name in ['MountainCar-v0', 'CartPole-v0', 'Acrobot-v1', 'LunarLander-v2', 'Pong-ram-v0']:
+
+env = gym.make("Acrobot-v1")
 policy_model = nn_model((6,), 3)
 value_model = nn_model((6,), 1)
