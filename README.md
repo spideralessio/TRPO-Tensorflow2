@@ -5,7 +5,7 @@ This project was done as for a Reinforcement Learning Class in the Master's Degr
 
 ## Requirements
 Create a conda environment with the following command
-`$ conda create -n trpo python`
+`$ conda create -n trpo python==3.7`
 
 Activate the environment just created
 `$ conda activate trpo`
